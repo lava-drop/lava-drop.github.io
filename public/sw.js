@@ -1,6 +1,6 @@
 // Minimal service worker: makes the app installable and keeps the shell loading on a bad
 // connection. Game data always comes live from Supabase; nothing from it is cached.
-const CACHE = 'lavadrop-v2';
+const CACHE = 'lavadrop-v3';
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', 'words.txt', 'icon.svg'])));
   self.skipWaiting();
@@ -38,7 +38,7 @@ self.addEventListener('push', (e) => {
       tag: d.tag,
       renotify: true,
       icon: 'icon-192.png',
-      badge: 'icon-192.png',
+      badge: 'badge-96.png',
       data: { url: d.url || './' },
     }),
   );
