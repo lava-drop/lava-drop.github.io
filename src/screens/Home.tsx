@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, type Me } from '../api';
 import { go } from '../App';
 import { Critter } from '../art/Critter';
@@ -133,9 +133,9 @@ export function HomeScreen({ me, onChange }: { me: Me; onChange: () => void }) {
         </div>
       )}
 
-      <Section title="Your turn" games={mine} me={me} />
-      <Section title="Their turn" games={theirs} me={me} />
-      <Section title="Finished" games={done} me={me} />
+      <Section onEnded={load} title="Your turn" games={mine} me={me} />
+      <Section onEnded={load} title="Their turn" games={theirs} me={me} />
+      <Section onEnded={load} title="Finished" games={done} me={me} />
 
       {games && games.length > 0 && (
         <button className="link center" onClick={() => go({ name: 'help' })}>How to play</button>
@@ -144,15 +144,89 @@ export function HomeScreen({ me, onChange }: { me: Me; onChange: () => void }) {
   );
 }
 
-function Section({ title, games, me }: { title: string; games: GameSummary[]; me: Me }) {
+function Section({ title, games, me, onEnded }: { title: string; games: GameSummary[]; me: Me; onEnded: () => void }) {
   if (!games.length) return null;
   return (
     <section className="section">
       <h2>{title}</h2>
       {games.map((g) => (
-        <GameCard key={g.id} g={g} me={me} />
+        g.active ? <SwipeToEnd key={g.id} g={g} me={me} onEnded={onEnded} /> : <GameCard key={g.id} g={g} me={me} />
       ))}
     </section>
+  );
+}
+
+const REVEAL = 96;
+
+/**
+ * An active game you can swipe left to show an End button (tap it to end the game for both
+ * players; it counts for no one). Vertical drags still scroll the page. Tapping the card while
+ * End is showing just slides it closed.
+ */
+function SwipeToEnd({ g, me, onEnded }: { g: GameSummary; me: Me; onEnded: () => void }) {
+  const [offset, setOffset] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const start = useRef<{ x: number; y: number; base: number; dir: 'h' | 'v' | null } | null>(null);
+  const swiped = useRef(false);
+  const open = offset <= -REVEAL / 2;
+
+  const down = (e: React.PointerEvent) => {
+    start.current = { x: e.clientX, y: e.clientY, base: offset, dir: null };
+    swiped.current = false;
+  };
+  const move = (e: React.PointerEvent) => {
+    const s = start.current;
+    if (!s) return;
+    const dx = e.clientX - s.x;
+    const dy = e.clientY - s.y;
+    if (!s.dir && Math.hypot(dx, dy) > 8) s.dir = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+    if (s.dir !== 'h') return;
+    swiped.current = true;
+    setDragging(true);
+    setOffset(Math.max(-REVEAL - 24, Math.min(0, s.base + dx)));
+  };
+  const up = () => {
+    if (start.current?.dir === 'h') setOffset(offset <= -REVEAL / 2 ? -REVEAL : 0);
+    start.current = null;
+    setDragging(false);
+  };
+
+  async function end() {
+    setBusy(true);
+    try {
+      await api.endGame(g.id);
+      onEnded();
+    } catch {
+      setBusy(false);
+      setOffset(0);
+    }
+  }
+
+  return (
+    <div className="swipe-row">
+      <button className="swipe-end" onClick={end} disabled={busy || !open} aria-label={`End game with ${g.them.username}`}>
+        {busy ? '…' : 'End'}
+      </button>
+      <div
+        className={`swipe-card${dragging ? ' dragging' : ''}`}
+        style={{ transform: `translateX(${offset}px)` }}
+        onPointerDown={down}
+        onPointerMove={move}
+        onPointerUp={up}
+        onPointerCancel={up}
+        onClickCapture={(e) => {
+          if (swiped.current || open) {
+            e.stopPropagation();
+            e.preventDefault();
+            if (!swiped.current) setOffset(0);
+          }
+          swiped.current = false;
+        }}
+      >
+        <GameCard g={g} me={me} />
+      </div>
+    </div>
   );
 }
 
