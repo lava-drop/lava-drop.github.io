@@ -1,18 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B0507"/><stop offset="0.6" stop-color="#3A0C08"/><stop offset="1" stop-color="#C2410C"/></linearGradient>
-    <linearGradient id="l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE14D"/><stop offset="0.4" stop-color="#FF8A00"/><stop offset="1" stop-color="#C1121F"/></linearGradient>
-    <radialGradient id="h" cx="0.35" cy="0.3" r="0.6"><stop offset="0" stop-color="#fff" stop-opacity="0.7"/><stop offset="0.45" stop-color="#fff" stop-opacity="0"/></radialGradient>
-  </defs>
-  <rect width="512" height="512" fill="url(#s)"/>
-  <path d="M-20 420 L150 200 Q180 172 212 200 L380 420 Z" fill="#2A100E"/>
-  <path d="M156 196 Q180 176 206 196 L198 212 Q181 200 164 212 Z" fill="#FFB000"/>
-  <path d="M176 210 Q166 290 186 330 Q174 380 192 420" stroke="#FF8A00" stroke-width="8" fill="none"/>
-  <path d="M300 420 L390 280 Q410 262 430 280 L540 420 Z" fill="#1F0C0B"/>
-  <path d="M0 420 Q64 404 128 420 T256 420 T384 420 T512 420 V512 H0 Z" fill="url(#l)"/>
-  <path d="M330 250 Q340 300 322 330" stroke="#C9B8A8" stroke-width="5" fill="none"/>
-  <ellipse cx="330" cy="160" rx="82" ry="98" fill="#FF2E4D"/>
-  <ellipse cx="330" cy="160" rx="82" ry="98" fill="url(#h)"/>
-  <path d="M320 262 L340 262 L330 250 Z" fill="#FF2E4D"/>
-  <text x="330" y="196" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="110" fill="#fff">?</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><style>@import url('https://fonts.googleapis.com/css2?family=Lilita+One&amp;display=block');</style><defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14509C"/><stop offset="0.55" stop-color="#3E8FDA"/><stop offset="1" stop-color="#9CC8E8"/></linearGradient>
+  <linearGradient id="cone" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5A3326"/><stop offset="0.5" stop-color="#2E1813"/><stop offset="1" stop-color="#170B09"/></linearGradient>
+  <linearGradient id="lava" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE45C"/><stop offset="0.35" stop-color="#FF8A00"/><stop offset="1" stop-color="#C21E0A"/></linearGradient>
+  <linearGradient id="hot" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A1A"/><stop offset="0.6" stop-color="#E0420E"/><stop offset="1" stop-color="#7A0A06"/></linearGradient>
+  <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBEBC4"/><stop offset="1" stop-color="#E4C083"/></linearGradient>
+  <radialGradient id="shine" cx="0.35" cy="0.3" r="0.6"><stop offset="0" stop-color="#fff" stop-opacity="0.7"/><stop offset="0.45" stop-color="#fff" stop-opacity="0"/></radialGradient>
+  <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#FFB000" stop-opacity="0.9"/><stop offset="1" stop-color="#FF6A00" stop-opacity="0"/></radialGradient></defs>
+  <rect width="512" height="512" fill="url(#sky)"/>
+  <circle cx="256" cy="150" r="150" fill="url(#glow)"/>
+  <g fill="#FFB000"><circle cx="190" cy="92" r="16"/><circle cx="320" cy="78" r="13"/><circle cx="256" cy="52" r="18"/><circle cx="150" cy="140" r="10"/><circle cx="362" cy="130" r="11"/></g>
+  <g fill="#FF6A00"><circle cx="222" cy="122" r="11"/><circle cx="292" cy="110" r="12"/></g>
+  <path d="M-30 512 L196 196 Q256 156 316 196 L542 512 Z" fill="url(#cone)"/>
+  <path d="M196 196 Q256 160 316 196 L302 222 Q256 196 210 222 Z" fill="#FFB000"/>
+  <path d="M226 214 Q206 290 236 340 Q214 400 240 470" stroke="#FF8A00" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <path d="M290 214 Q316 280 296 330" stroke="#FFB000" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <path d="M0 450 Q64 430 128 450 T256 450 T384 450 T512 450 V512 H0 Z" fill="url(#lava)"/>
+  
+  <g transform="translate(186 330) rotate(-9)">
+    <rect x="-75" y="-64.5" width="150" height="150" rx="24" fill="#241509"/>
+    <rect x="-75" y="-75" width="150" height="150" rx="24" fill="url(#tile)" stroke="#241509" stroke-width="6.75"/>
+    <text x="-6" y="37.5" text-anchor="middle" font-family="Lilita One" font-size="108" fill="#241509">L</text>
+    <text x="49.5" y="57" text-anchor="middle" font-family="Lilita One" font-size="30" fill="#241509">1</text>
+  </g>
+  
+  <g transform="translate(330 318) rotate(8)">
+    <rect x="-75" y="-64.5" width="150" height="150" rx="24" fill="#241509"/>
+    <rect x="-75" y="-75" width="150" height="150" rx="24" fill="url(#tile)" stroke="#241509" stroke-width="6.75"/>
+    <text x="-6" y="37.5" text-anchor="middle" font-family="Lilita One" font-size="108" fill="#241509">D</text>
+    <text x="49.5" y="57" text-anchor="middle" font-family="Lilita One" font-size="30" fill="#241509">2</text>
+  </g></svg>
