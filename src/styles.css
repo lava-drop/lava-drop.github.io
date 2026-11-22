@@ -391,3 +391,12 @@ b { color: var(--gold); }
 .slot.over, .tile.in-slot.over { outline: 3px solid var(--gold); outline-offset: 1px; }
 .tile.lifted { opacity: 0.35; }
 .drag-ghost { position: fixed; z-index: 50; pointer-events: none; transform: translate(-50%, -60%) scale(1.15) rotate(-4deg); box-shadow: 0 10px 18px rgba(0, 0, 0, 0.45); }
+
+/* name-first quick play, and the save-your-account reminder */
+.quick-card { display: flex; flex-direction: column; gap: 6px; padding: 14px; }
+.quick-card label { margin-top: 2px; }
+.quick-card .quick-play { margin: 6px 0 2px; }
+.quick-card .fine { margin: 0; text-align: center; }
+.save-nudge .fine { margin: 0 0 8px; }
+.save-nudge .btn-big { margin: 10px 0 4px; }
+.save-nudge .link { display: block; margin: 4px auto 0; }

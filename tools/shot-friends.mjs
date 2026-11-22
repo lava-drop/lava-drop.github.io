@@ -4,7 +4,8 @@ const b = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chro
 const p = await b.newPage();
 await p.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
 await p.goto('http://127.0.0.1:5173/lava-drop/', { waitUntil: 'networkidle0' });
-await p.click('.quick-play');
+await p.type('.quick-card input', `T${Math.random().toString(36).slice(2, 8)}`);
+  await p.click('.quick-play');
 await new Promise((r) => setTimeout(r, 3500));
 await p.goto('http://127.0.0.1:5173/lava-drop/#/friends', { waitUntil: 'networkidle0' });
 await new Promise((r) => setTimeout(r, 2000));

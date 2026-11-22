@@ -6,6 +6,7 @@ import { Scene } from '../art/Scene';
 import { emailFor } from '../config';
 import { supabase } from '../supabase';
 import type { Color, Friend } from '../types';
+import { NAME_RULE } from './GuestSave';
 
 export function AuthScreen({ onDone, inviter }: { onDone: () => void; inviter?: string }) {
   const [invitedBy, setInvitedBy] = useState<Friend | null>(null);
@@ -18,24 +19,30 @@ export function AuthScreen({ onDone, inviter }: { onDone: () => void; inviter?: 
   const [color, setColor] = useState<Color>('sun');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [nick, setNick] = useState('');
+  const [quickError, setQuickError] = useState('');
 
-  // Quick play: an anonymous account named Guest#### with a random character, no username or password.
-  async function playAsGuest() {
-    setError('');
+  // Quick play: pick a name, no password. It's a guest account until they add a password later.
+  async function playAsGuest(e: React.FormEvent) {
+    e.preventDefault();
+    setQuickError('');
+    const name = nick.trim();
+    if (!NAME_RULE.test(name)) {
+      setQuickError(name ? 'Names are 3 to 16 letters, numbers or _ (no spaces).' : 'Type your name first.');
+      return;
+    }
     setBusy(true);
     try {
-      let name = '';
-      for (let i = 0; i < 6 && !name; i++) {
-        const n = `Guest${Math.floor(1000 + Math.random() * 9000)}`;
-        if (await api.usernameAvailable(n)) name = n;
+      if (!(await api.usernameAvailable(name))) {
+        setQuickError(`${name} is taken. Try another, or sign in below if it’s you.`);
+        return;
       }
-      if (!name) throw new Error('Couldn’t find a free guest name. Try again.');
       const pick = COLOR_KEYS[Math.floor(Math.random() * COLOR_KEYS.length)];
       const { error } = await supabase.auth.signInAnonymously({ options: { data: { username: name, color: pick } } });
       if (error) throw error;
       onDone();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong. Try again.');
+      setQuickError(err instanceof Error ? err.message : 'Something went wrong. Try again.');
     } finally {
       setBusy(false);
     }
@@ -88,7 +95,7 @@ export function AuthScreen({ onDone, inviter }: { onDone: () => void; inviter?: 
           <Critter color={invitedBy.color} size={52} mood="cheer" />
           <div>
             <b>{invitedBy.username}</b> challenged you to Lava Drop!
-            <div className="fine">Tap Play now to jump in, or sign in if you already play.</div>
+            <div className="fine">Type your name and tap Play now, or sign in if you already play.</div>
           </div>
         </div>
       )}
@@ -99,10 +106,26 @@ export function AuthScreen({ onDone, inviter }: { onDone: () => void; inviter?: 
           <Scene color={color} misses={2} maxMisses={6} state="playing" rival={{ color: color === 'sky' ? 'berry' : 'sky' }} />
         </div>
       </div>
-      <button className="btn btn-big btn-go quick-play" onClick={playAsGuest} disabled={busy} type="button">
-        {busy ? '…' : 'Play now'}
-      </button>
-      <p className="fine center">No sign-up. You’ll play as a guest on this device.</p>
+      <form className="card form quick-card" onSubmit={playAsGuest}>
+        <label>
+          What should we call you?
+          <input
+            value={nick}
+            onChange={(e) => setNick(e.target.value)}
+            placeholder="Your name"
+            autoCapitalize="words"
+            autoCorrect="off"
+            autoComplete="nickname"
+            maxLength={16}
+          />
+        </label>
+        {quickError && <div className="error">{quickError}</div>}
+        <button className="btn btn-big btn-go quick-play" disabled={busy}>
+          {busy ? '…' : 'Play now'}
+        </button>
+        <p className="fine">No password needed. Add one later to keep your games on any phone.</p>
+      </form>
+      <p className="fine center">Already play? Sign in below.</p>
       <div className="card">
         <div className="tabs">
           <button className={mode === 'in' ? 'tab on' : 'tab'} onClick={() => setMode('in')} type="button">

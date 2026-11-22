@@ -22,6 +22,7 @@ async function guest() {
   p.on('pageerror', (e) => errors.push(e.message));
   await p.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
   await p.goto(BASE, { waitUntil: 'networkidle0' });
+  await p.type('.quick-card input', `T${Math.random().toString(36).slice(2, 8)}`);
   await p.click('.quick-play');
   await wait(3500);
   const id = await p.evaluate(() => JSON.parse(localStorage.getItem('popquiz-auth')).user.id);

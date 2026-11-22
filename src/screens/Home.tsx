@@ -7,6 +7,7 @@ import { shareInvite, SHARE_MSG } from '../invite';
 import { enablePush, pushState, type PushState } from '../push';
 import { supabase } from '../supabase';
 import type { GameSummary } from '../types';
+import { GuestSave, isAutoGuestName } from './GuestSave';
 
 /** Re-runs `load` whenever one of my games changes on the server. */
 export function useGamesFeed(load: () => void, filter?: string) {
@@ -24,7 +25,7 @@ export function useGamesFeed(load: () => void, filter?: string) {
   }, [load, filter]);
 }
 
-export function HomeScreen({ me }: { me: Me }) {
+export function HomeScreen({ me, onChange }: { me: Me; onChange: () => void }) {
   const [games, setGames] = useState<GameSummary[] | null>(null);
   const [error, setError] = useState('');
 
@@ -43,6 +44,26 @@ export function HomeScreen({ me }: { me: Me }) {
     const r = await shareInvite(me);
     if (r === 'copied' || r === 'failed') setShareMsg(SHARE_MSG[r]);
   }
+
+  // Guests get asked to save their account: right away if they still have an automatic Guest####
+  // name, otherwise once they've finished a game. "Not now" hides it until the app is reopened.
+  const [nudgeOff, setNudgeOff] = useState(() => {
+    try {
+      return sessionStorage.getItem('lavadrop-save-nudge') === 'off';
+    } catch {
+      return false;
+    }
+  });
+  const hideNudge = () => {
+    setNudgeOff(true);
+    try {
+      sessionStorage.setItem('lavadrop-save-nudge', 'off');
+    } catch {
+      /* private mode: it just shows again next time */
+    }
+  };
+  const autoName = isAutoGuestName(me.username);
+  const showNudge = me.guest && !nudgeOff && games !== null && (autoName || games.some((g) => !g.active));
 
   const mine = games?.filter((g) => g.active && g.my_turn) ?? [];
   const theirs = games?.filter((g) => g.active && !g.my_turn) ?? [];
@@ -84,10 +105,24 @@ export function HomeScreen({ me }: { me: Me }) {
       )}
       {me.guest && (
         <button className="card guest-card" onClick={() => go({ name: 'me' })}>
-          Playing as guest <b>{me.username}</b>. Tap to pick a real username and keep this account.
+          {autoName ? <>You’re showing up as <b>{me.username}</b>. Tap to pick your name.</> : <>Add a password to keep your games, <b>{me.username}</b>.</>}
         </button>
       )}
 
+      {showNudge && (
+        <div className="modal-bg">
+          <div className="modal save-nudge">
+            <h3>{autoName ? 'Pick your name' : 'Keep your games'}</h3>
+            <p className="fine">
+              {autoName
+                ? `You’re showing up as ${me.username}. Pick your real name and a password so family knows it’s you and your games are safe.`
+                : 'Add a password so your games and record aren’t lost if this browser gets cleared, and so you can play from any phone.'}
+            </p>
+            <GuestSave me={me} onSaved={() => { hideNudge(); onChange(); }} />
+            <button className="link center" onClick={hideNudge}>Not now</button>
+          </div>
+        </div>
+      )}
       {error && <div className="error">{error}</div>}
       {games === null && !error && <div className="loading">Loading games…</div>}
       {games?.length === 0 && (

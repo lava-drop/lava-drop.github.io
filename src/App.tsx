@@ -67,7 +67,7 @@ export default function App() {
 
   return (
     <div className="app">
-      {route.name === 'home' && <HomeScreen me={me} />}
+      {route.name === 'home' && <HomeScreen me={me} onChange={refreshMe} />}
       {route.name === 'friends' && <FriendsScreen me={me} />}
       {route.name === 'me' && <MeScreen me={me} onChange={refreshMe} />}
       {route.name === 'help' && <HowToPlay />}

@@ -17,7 +17,8 @@ const uid = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('popquiz-aut
 
 const a = await page();
 await a.goto(BASE, { waitUntil: 'networkidle0' });
-await a.click('.quick-play');
+await a.type('.quick-card input', `T${Math.random().toString(36).slice(2, 8)}`);
+  await a.click('.quick-play');
 await wait(3500);
 const aid = await uid(a);
 await a.screenshot({ path: `${out}/40-home.png` });
@@ -29,7 +30,8 @@ const bp = await page();
 await bp.goto(`${BASE}#/invite/${aid}`, { waitUntil: 'networkidle0' });
 await wait(1500);
 await bp.screenshot({ path: `${out}/42-invite-signedout.png` });
-await bp.click('.quick-play');
+await bp.type('.quick-card input', `T${Math.random().toString(36).slice(2, 8)}`);
+  await bp.click('.quick-play');
 await wait(4000);
 const bid = await uid(bp);
 await bp.screenshot({ path: `${out}/43-invite-landed.png` });

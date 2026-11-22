@@ -8,6 +8,7 @@ import { isMuted, setMuted } from '../sound';
 import { supabase } from '../supabase';
 import type { Stats } from '../types';
 import { BackBar } from './BackBar';
+import { GuestSave } from './GuestSave';
 
 const NAME_RULE = /^[A-Za-z0-9_]{3,16}$/;
 const PUSH_LABEL: Record<PushState, string> = {
@@ -81,7 +82,7 @@ export function MeScreen({ me, onChange }: { me: Me; onChange: () => void }) {
     }
   }
 
-  const showForm = editing || me.guest;
+  const showForm = editing && !me.guest;
 
   return (
     <div className="screen">
@@ -89,8 +90,13 @@ export function MeScreen({ me, onChange }: { me: Me; onChange: () => void }) {
       <div className="card center-col">
         <Critter color={me.color} size={120} mood="cheer" />
         <div className="big-name">{me.username}</div>
-        {me.guest && <p className="fine">You’re playing as a guest. This account only lives in this browser until you save it below.</p>}
-        {!showForm && (
+        {me.guest && (
+          <>
+            <p className="fine">Your games only live in this browser until you add a password. Save it to play from any phone.</p>
+            <GuestSave me={me} onSaved={(n) => { setMsg({ good: true, text: `Saved. Sign in as ${n} on any phone.` }); onChange(); }} />
+          </>
+        )}
+        {!showForm && !me.guest && (
           <button className="btn" onClick={() => { setEditing(true); setMsg(null); }}>
             Change username
           </button>
