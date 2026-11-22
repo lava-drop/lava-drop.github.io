@@ -344,3 +344,16 @@ b { color: var(--gold); }
 .push-help { margin: 0; padding: 0 18px 12px; }
 .name-form { width: 100%; margin: 6px 0 4px; }
 .list-row:disabled { opacity: 1; cursor: default; }
+
+/* invites */
+.home-actions { margin: -6px 0 14px; }
+.home-actions .btn { padding: 10px; font-size: 1.1rem; }
+.invite-cta { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 14px; }
+.invite-cta p { margin: 0; }
+.invite-banner { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 4px; font-size: 1.05rem; }
+.invite-banner .fine { margin: 4px 0 0; }
+.invite-card { gap: 10px; padding: 22px 16px; }
+.invite-card .btn-big { margin: 6px 0 0; }
+.invite-pair { display: flex; align-items: center; gap: 10px; }
+.invite-pair .vs { font-family: 'Lilita One', sans-serif; font-size: 1.6rem; color: var(--gold, #FFC233); }
+.big-line { font-size: 1.2rem; font-weight: 600; text-align: center; margin: 4px 0; }

@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { COLOR_KEYS, COLORS, Critter } from '../art/Critter';
 import { Logo } from '../art/Logo';
 import { Scene } from '../art/Scene';
 import { emailFor } from '../config';
 import { supabase } from '../supabase';
-import type { Color } from '../types';
+import type { Color, Friend } from '../types';
 
-export function AuthScreen({ onDone }: { onDone: () => void }) {
+export function AuthScreen({ onDone, inviter }: { onDone: () => void; inviter?: string }) {
+  const [invitedBy, setInvitedBy] = useState<Friend | null>(null);
+  useEffect(() => {
+    if (inviter) api.inviteInfo(inviter).then(setInvitedBy).catch(() => {});
+  }, [inviter]);
   const [mode, setMode] = useState<'in' | 'new'>('in');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -79,6 +83,15 @@ export function AuthScreen({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="screen auth">
+      {invitedBy && (
+        <div className="card invite-banner">
+          <Critter color={invitedBy.color} size={52} mood="cheer" />
+          <div>
+            <b>{invitedBy.username}</b> challenged you to Lava Drop!
+            <div className="fine">Tap Play now to jump in, or sign in if you already play.</div>
+          </div>
+        </div>
+      )}
       <div className="auth-hero">
         <Logo size={1.25} />
         <p className="tagline">Guess the word or drop in the lava.</p>

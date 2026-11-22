@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, type Me } from '../api';
 import { go } from '../App';
 import { Critter } from '../art/Critter';
+import { shareInvite, SHARE_MSG } from '../invite';
 import type { Friend } from '../types';
 import { BackBar } from './BackBar';
 
-/** Pick who to play, or add someone by username. */
+/** Your friends (tap Play to start a game), invites, adding by username, and the computer. */
 export function FriendsScreen({ me }: { me: Me }) {
   const [friends, setFriends] = useState<Friend[] | null>(null);
   const [name, setName] = useState('');
@@ -54,6 +55,11 @@ export function FriendsScreen({ me }: { me: Me }) {
     }
   }
 
+  async function share() {
+    const r = await shareInvite(me);
+    if (r === 'copied' || r === 'failed') setMsg(SHARE_MSG[r]);
+  }
+
   async function remove(f: Friend) {
     await api.removeFriend(f.id);
     load();
@@ -61,7 +67,33 @@ export function FriendsScreen({ me }: { me: Me }) {
 
   return (
     <div className="screen">
-      <BackBar title="New game" />
+      <BackBar title="Friends" />
+      <div className="card invite-cta">
+        <b>Invite family</b>
+        <p className="fine">Text them a link. When they open it, you’re friends and ready to play.</p>
+        <button className="btn btn-go" onClick={share}>Send an invite</button>
+      </div>
+      <section className="section">
+        <div className="section-head">
+          <h2>Your friends</h2>
+          {friends && friends.length > 0 && (
+            <button className="link" onClick={() => setEditing(!editing)}>{editing ? 'Done' : 'Edit'}</button>
+          )}
+        </div>
+        {friends === null && <div className="loading">Loading…</div>}
+        {friends?.length === 0 && <p className="hint">No friends yet. Send an invite, or add them by username below.</p>}
+        {friends?.map((f) => (
+          <div key={f.id} className="friend-row">
+            <Critter color={f.color} size={48} />
+            <div className="gc-name grow">{f.username}</div>
+            {editing ? (
+              <button className="btn btn-ghost" onClick={() => remove(f)}>Remove</button>
+            ) : (
+              <button className="btn btn-go" disabled={busy} onClick={() => play(f)}>Play</button>
+            )}
+          </div>
+        ))}
+      </section>
       <form className="card add-friend" onSubmit={add}>
         <label>
           Add a player by username
@@ -80,7 +112,6 @@ export function FriendsScreen({ me }: { me: Me }) {
         <p className="fine">Your username is <b>{me.username}</b>. Tell your family so they can add you.</p>
         {msg && <div className="note">{msg}</div>}
       </form>
-
       <section className="section">
         <h2>Play the computer</h2>
         {bots?.map((b) => (
@@ -94,28 +125,6 @@ export function FriendsScreen({ me }: { me: Me }) {
               <div className="bot-desc">The computer. Always ready for a game.</div>
             </div>
             <button className="btn btn-go" disabled={busy} onClick={() => play(b)}>Play</button>
-          </div>
-        ))}
-      </section>
-
-      <section className="section">
-        <div className="section-head">
-          <h2>Play with</h2>
-          {friends && friends.length > 0 && (
-            <button className="link" onClick={() => setEditing(!editing)}>{editing ? 'Done' : 'Edit'}</button>
-          )}
-        </div>
-        {friends === null && <div className="loading">Loading…</div>}
-        {friends?.length === 0 && <p className="hint">Add family by username above to play them.</p>}
-        {friends?.map((f) => (
-          <div key={f.id} className="friend-row">
-            <Critter color={f.color} size={48} />
-            <div className="gc-name grow">{f.username}</div>
-            {editing ? (
-              <button className="btn btn-ghost" onClick={() => remove(f)}>Remove</button>
-            ) : (
-              <button className="btn btn-go" disabled={busy} onClick={() => play(f)}>Play</button>
-            )}
           </div>
         ))}
       </section>

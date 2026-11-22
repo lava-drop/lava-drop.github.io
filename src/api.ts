@@ -24,6 +24,8 @@ export const api = {
   submitWord: (gid: string, word: string) =>
     call<{ result: 'ok' | 'not_a_word' | 'not_in_rack' | 'bad_length'; game?: Game }>('submit_word', { gid, word }),
   resign: (gid: string) => call<Game>('resign', { gid }),
+  inviteInfo: (inviter: string) => call<Friend | null>('invite_info', { inviter }),
+  acceptInvite: (inviter: string) => call<(Friend & { self: boolean }) | null>('accept_invite', { inviter }),
   changeUsername: (newName: string) => call<'ok' | 'invalid' | 'taken'>('change_username', { new_name: newName }),
 };
 

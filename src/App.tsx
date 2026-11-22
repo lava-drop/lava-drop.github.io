@@ -7,6 +7,7 @@ import { FriendsScreen } from './screens/Friends';
 import { GameScreen } from './screens/Game';
 import { MeScreen } from './screens/MeScreen';
 import { HowToPlay } from './screens/HowToPlay';
+import { InviteScreen } from './screens/Invite';
 import { loadWords } from './words';
 import { resavePush } from './push';
 
@@ -15,12 +16,14 @@ export type Route =
   | { name: 'friends' }
   | { name: 'me' }
   | { name: 'help' }
-  | { name: 'game'; id: string };
+  | { name: 'game'; id: string }
+  | { name: 'invite'; id: string };
 
 function parseHash(): Route {
   const h = location.hash.replace(/^#\/?/, '');
   const [a, b] = h.split('/');
   if (a === 'game' && b) return { name: 'game', id: b };
+  if (a === 'invite' && b) return { name: 'invite', id: b };
   if (a === 'friends') return { name: 'friends' };
   if (a === 'me') return { name: 'me' };
   if (a === 'help') return { name: 'help' };
@@ -28,7 +31,7 @@ function parseHash(): Route {
 }
 
 export function go(r: Route) {
-  location.hash = r.name === 'game' ? `#/game/${r.id}` : r.name === 'home' ? '#/' : `#/${r.name}`;
+  location.hash = r.name === 'game' || r.name === 'invite' ? `#/${r.name}/${r.id}` : r.name === 'home' ? '#/' : `#/${r.name}`;
 }
 
 export default function App() {
@@ -57,7 +60,7 @@ export default function App() {
   }, [refreshMe]);
 
   if (me === undefined) return <div className="app"><div className="loading">Loading…</div></div>;
-  if (me === null) return <div className="app"><AuthScreen onDone={refreshMe} /></div>;
+  if (me === null) return <div className="app"><AuthScreen onDone={refreshMe} inviter={route.name === 'invite' ? route.id : undefined} /></div>;
 
   return (
     <div className="app">
@@ -66,6 +69,7 @@ export default function App() {
       {route.name === 'me' && <MeScreen me={me} onChange={refreshMe} />}
       {route.name === 'help' && <HowToPlay />}
       {route.name === 'game' && <GameScreen key={route.id} me={me} gid={route.id} />}
+      {route.name === 'invite' && <InviteScreen key={route.id} me={me} inviter={route.id} />}
     </div>
   );
 }

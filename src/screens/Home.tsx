@@ -3,6 +3,7 @@ import { api, type Me } from '../api';
 import { go } from '../App';
 import { Critter } from '../art/Critter';
 import { Logo } from '../art/Logo';
+import { shareInvite, SHARE_MSG } from '../invite';
 import { enablePush, pushState, type PushState } from '../push';
 import { supabase } from '../supabase';
 import type { GameSummary } from '../types';
@@ -37,6 +38,12 @@ export function HomeScreen({ me }: { me: Me }) {
     void pushState().then(setPush);
   }, []);
 
+  const [shareMsg, setShareMsg] = useState('');
+  async function invite() {
+    const r = await shareInvite(me);
+    if (r === 'copied' || r === 'failed') setShareMsg(SHARE_MSG[r]);
+  }
+
   const mine = games?.filter((g) => g.active && g.my_turn) ?? [];
   const theirs = games?.filter((g) => g.active && !g.my_turn) ?? [];
   const done = games?.filter((g) => !g.active) ?? [];
@@ -53,6 +60,11 @@ export function HomeScreen({ me }: { me: Me }) {
       <button className="btn btn-big btn-go new-game" onClick={() => go({ name: 'friends' })}>
         + New game
       </button>
+      <div className="row gap home-actions">
+        <button className="btn grow" onClick={() => go({ name: 'friends' })}>Friends</button>
+        <button className="btn grow" onClick={invite}>Invite</button>
+      </div>
+      {shareMsg && <div className="note">{shareMsg}</div>}
 
       {(push === 'off' || push === 'needs-install') && (
         <div className="card push-card">
