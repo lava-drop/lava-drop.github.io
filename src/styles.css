@@ -91,6 +91,8 @@ b { color: var(--gold); }
 .link { background: none; border: none; color: var(--ember); font-weight: 700; padding: 6px; text-decoration: underline; }
 .card .link, .modal .link { color: var(--ember); }
 .backbar .link { text-decoration: none; }
+/* Links sitting straight on the backdrop (not in a card) need to read over sky and lava alike. */
+.screen > .link, .section-head .link { color: #fff; text-shadow: 0 2px 0 var(--ink), 1px 0 0 var(--ink), -1px 0 0 var(--ink), 0 -1px 0 var(--ink), 0 0 8px rgba(0, 0, 0, 0.7); }
 
 /* logo */
 .logo {
