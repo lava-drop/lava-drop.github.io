@@ -117,8 +117,9 @@ export function GameScreen({ me, gid }: { me: Me; gid: string }) {
 }
 
 function Scoreboard({ game }: { game: Game }) {
-  const done = game.history.filter((h) => h.solver === game.me.id && h.status !== 'open').length;
-  const round = Math.min(game.rounds, done + 1);
+  // A round is over once both players have played it, so count every finished word, not just mine.
+  const done = game.history.filter((h) => h.status !== 'open').length;
+  const round = Math.min(game.rounds, Math.floor(done / 2) + 1);
   return (
     <div className="scoreboard">
       <div className="sb-player">
