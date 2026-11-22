@@ -95,21 +95,34 @@ export function GameScreen({ me, gid }: { me: Me; gid: string }) {
       {recap && <RecapModal w={recap} game={game} onClose={() => setRecap(null)} />}
       {menu && (
         <div className="modal-bg" onClick={() => setMenu(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Give up this game?</h3>
-            <p>{game.them.username} will win.</p>
-            <div className="row gap">
-              <button className="btn btn-ghost grow" onClick={() => setMenu(false)}>Keep playing</button>
-              <button
-                className="btn btn-danger grow"
-                onClick={async () => {
-                  setMenu(false);
-                  setGame(await api.resign(gid));
-                }}
-              >
-                Resign
-              </button>
-            </div>
+          <div className="modal game-menu" onClick={(e) => e.stopPropagation()}>
+            <h3>Done with this game?</h3>
+            <button
+              className="btn btn-ghost menu-choice"
+              onClick={async () => {
+                setMenu(false);
+                try {
+                  await api.endGame(gid);
+                  go({ name: 'home' });
+                } catch (e) {
+                  setError(e instanceof Error ? e.message : 'Couldn’t end the game.');
+                }
+              }}
+            >
+              End game
+              <span>Ends it for both of you. It doesn’t count for anyone and disappears from your games.</span>
+            </button>
+            <button
+              className="btn btn-danger menu-choice"
+              onClick={async () => {
+                setMenu(false);
+                setGame(await api.resign(gid));
+              }}
+            >
+              Resign
+              <span>{game.them.username} wins, and it counts in your record.</span>
+            </button>
+            <button className="link center" onClick={() => setMenu(false)}>Keep playing</button>
           </div>
         </div>
       )}
@@ -607,6 +620,19 @@ function DonePanel({ game, me }: { game: Game; me: Me }) {
   useEffect(() => {
     api.headToHead(game.them.id).then((r) => setRecord(recordLine(game.them.username, r))).catch(() => {});
   }, [game.them.id, game.them.username]);
+  if (game.status === 'cancelled') {
+    return (
+      <div className="panel">
+        <div className="done-card card center-col">
+          <div className="result-title">Game ended</div>
+          <p className="fine">This game was called off. It doesn’t count for anyone.</p>
+        </div>
+        <button className="btn btn-big btn-go" disabled={busy} onClick={async () => { setBusy(true); go({ name: 'game', id: await api.startGame(game.them.id) }); }}>
+          New game with {game.them.username}
+        </button>
+      </div>
+    );
+  }
   const title = game.resigned_by
     ? game.resigned_by === me.id ? 'You resigned' : `${game.them.username} resigned`
     : tie ? 'It’s a tie!' : won ? 'You win!' : `${game.them.username} wins!`;

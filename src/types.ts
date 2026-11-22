@@ -75,7 +75,7 @@ export interface WordResult {
 
 export interface Game {
   id: string;
-  status: 'active' | 'finished';
+  status: 'active' | 'finished' | 'cancelled';
   rounds: number;
   i_started: boolean;
   me: Player;
