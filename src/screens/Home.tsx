@@ -63,6 +63,7 @@ export function HomeScreen({ me }: { me: Me }) {
       <div className="row gap home-actions">
         <button className="btn grow" onClick={() => go({ name: 'friends' })}>Friends</button>
         <button className="btn grow" onClick={invite}>Invite</button>
+        <button className="btn grow" onClick={() => go({ name: 'leaders' })}>Rankings</button>
       </div>
       {shareMsg && <div className="note">{shareMsg}</div>}
 

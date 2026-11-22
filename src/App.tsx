@@ -8,6 +8,7 @@ import { GameScreen } from './screens/Game';
 import { MeScreen } from './screens/MeScreen';
 import { HowToPlay } from './screens/HowToPlay';
 import { InviteScreen } from './screens/Invite';
+import { LeadersScreen } from './screens/Leaders';
 import { loadWords } from './words';
 import { resavePush } from './push';
 
@@ -16,6 +17,7 @@ export type Route =
   | { name: 'friends' }
   | { name: 'me' }
   | { name: 'help' }
+  | { name: 'leaders' }
   | { name: 'game'; id: string }
   | { name: 'invite'; id: string };
 
@@ -27,6 +29,7 @@ function parseHash(): Route {
   if (a === 'friends') return { name: 'friends' };
   if (a === 'me') return { name: 'me' };
   if (a === 'help') return { name: 'help' };
+  if (a === 'leaders') return { name: 'leaders' };
   return { name: 'home' };
 }
 
@@ -68,6 +71,7 @@ export default function App() {
       {route.name === 'friends' && <FriendsScreen me={me} />}
       {route.name === 'me' && <MeScreen me={me} onChange={refreshMe} />}
       {route.name === 'help' && <HowToPlay />}
+      {route.name === 'leaders' && <LeadersScreen />}
       {route.name === 'game' && <GameScreen key={route.id} me={me} gid={route.id} />}
       {route.name === 'invite' && <InviteScreen key={route.id} me={me} inviter={route.id} />}
     </div>

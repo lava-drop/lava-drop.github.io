@@ -3,6 +3,7 @@ import { api, type Me } from '../api';
 import { go } from '../App';
 import { Critter } from '../art/Critter';
 import { shareInvite, SHARE_MSG } from '../invite';
+import { recordLine } from '../records';
 import type { Friend } from '../types';
 import { BackBar } from './BackBar';
 
@@ -85,7 +86,10 @@ export function FriendsScreen({ me }: { me: Me }) {
         {friends?.map((f) => (
           <div key={f.id} className="friend-row">
             <Critter color={f.color} size={48} />
-            <div className="gc-name grow">{f.username}</div>
+            <div className="grow">
+              <div className="gc-name">{f.username}</div>
+              {recordLine(f.username, f.record) && <div className="record-line">{recordLine(f.username, f.record)}</div>}
+            </div>
             {editing ? (
               <button className="btn btn-ghost" onClick={() => remove(f)}>Remove</button>
             ) : (

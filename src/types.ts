@@ -13,6 +13,36 @@ export interface Friend {
   username: string;
   color: Color;
   bot?: 'easy' | 'hard' | null;
+  /** My record against them (friends list only). */
+  record?: Record3;
+}
+
+export interface Record3 {
+  wins: number;
+  losses: number;
+  ties: number;
+}
+
+export interface Leader {
+  id: string;
+  username: string;
+  color: Color;
+  wins: number;
+  losses: number;
+  games: number;
+  me: boolean;
+}
+
+export interface Stats {
+  wins: number;
+  losses: number;
+  ties: number;
+  bot_wins: number;
+  bot_losses: number;
+  best_score: number | null;
+  streak: number;
+  stumps: number;
+  best_word: { word: string; victim: string; points: number } | null;
 }
 
 export interface Solving {

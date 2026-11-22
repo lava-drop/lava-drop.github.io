@@ -1,3 +1,4 @@
+import { recordLine } from '../records';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, type Me } from '../api';
 import { go } from '../App';
@@ -299,10 +300,27 @@ function WordReveal({ word, guesses }: { word: string; guesses?: string }) {
 
 // ---------------------------------------------------------------- making a word
 
+const EMPTY_SLOTS: (number | null)[] = Array(8).fill(null);
+interface Drag {
+  from: 'rack' | 'slot';
+  tile: number;
+  slot: number;
+  sx: number;
+  sy: number;
+  x: number;
+  y: number;
+  moved: boolean;
+  over: number | null;
+}
+
 function SetPanel({ game, onMove, onError }: { game: Game; onMove: (g: Game) => void; onError: (e: string) => void }) {
   const rack = game.rack!;
   const [order, setOrder] = useState<number[]>(() => [...rack.letters].map((_, i) => i));
-  const [picked, setPicked] = useState<number[]>([]);
+  // The 8 word slots, left to right: a rack tile index, or null for a blank. Removing a letter leaves
+  // its blank in place, and `cursor` points at it so the next tile you tap fills that spot.
+  const [slots, setSlots] = useState<(number | null)[]>(EMPTY_SLOTS);
+  const [cursor, setCursor] = useState<number | null>(null);
+  const [drag, setDrag] = useState<Drag | null>(null);
   const [busy, setBusy] = useState(false);
   const [suggest, setSuggest] = useState<string[] | null>(null);
   const [, setWordsReady] = useState(0);
@@ -310,22 +328,97 @@ function SetPanel({ game, onMove, onError }: { game: Game; onMove: (g: Game) => 
 
   useEffect(() => {
     setOrder([...rack.letters].map((_, i) => i));
-    setPicked([]);
+    setSlots(EMPTY_SLOTS);
+    setCursor(null);
     setSuggest(null);
   }, [rack.letters]);
   useEffect(() => {
     void loadWords().then(() => setWordsReady(1));
   }, []);
 
-  const word = picked.map((i) => rack.letters[i]).join('');
+  const last = slots.reduce<number>((acc, x, k) => (x === null ? acc : k), -1);
+  const gap = slots.slice(0, last + 1).includes(null);
+  const word = gap ? '' : slots.slice(0, last + 1).map((i) => rack.letters[i!]).join('');
   const valid = word.length >= 4 && word.length <= 8 && isWord(word);
+  const used = (i: number) => slots.includes(i);
 
-  const pick = useCallback((i: number) => {
-    if (picked.includes(i) || picked.length >= 8) return;
+  /** Puts rack tile i in slot k. Whatever was in k goes back to the rack; if i was in another slot, that one empties. */
+  const place = (i: number, k: number) => {
     sfx.tap();
     setBad('');
-    setPicked([...picked, i]);
-  }, [picked]);
+    setSlots((cur) => cur.map((x, j) => (j === k ? i : x === i ? null : x)));
+    setCursor(null);
+  };
+  const pick = (i: number) => {
+    if (used(i)) return;
+    const k = cursor ?? slots.indexOf(null);
+    if (k < 0) return;
+    place(i, k);
+  };
+  /** Tapping a letter in the word takes it out and leaves the blank, ready for a replacement. */
+  const tapSlot = (k: number) => {
+    if (slots[k] !== null) {
+      sfx.tap();
+      setSlots((cur) => cur.map((x, j) => (j === k ? null : x)));
+    }
+    setBad('');
+    setCursor(k);
+  };
+  const removeLast = () => {
+    if (last < 0) return;
+    setSlots((cur) => cur.map((x, j) => (j === last ? null : x)));
+    setCursor(null);
+  };
+  const clear = () => {
+    setSlots(EMPTY_SLOTS);
+    setCursor(null);
+  };
+
+  // Drag a tile from the rack onto any slot (replacing what's there), or drag a letter in the word
+  // to another slot (they swap) or off the word (it comes out). A press that doesn't move is a tap.
+  const startDrag = (e: React.PointerEvent, from: 'rack' | 'slot', tile: number, slot = -1) => {
+    if (e.button !== 0) return;
+    setDrag({ from, tile, slot, sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY, moved: false, over: null });
+  };
+  useEffect(() => {
+    if (!drag) return;
+    const slotAt = (x: number, y: number) => {
+      const el = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-slot]');
+      return el ? Number(el.dataset.slot) : null;
+    };
+    const move = (e: PointerEvent) => {
+      const moved = drag.moved || Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 8;
+      setDrag({ ...drag, x: e.clientX, y: e.clientY, moved, over: moved ? slotAt(e.clientX, e.clientY) : null });
+    };
+    const up = (e: PointerEvent) => {
+      setDrag(null);
+      if (!drag.moved) {
+        if (drag.from === 'rack') pick(drag.tile);
+        else tapSlot(drag.slot);
+        return;
+      }
+      const k = slotAt(e.clientX, e.clientY);
+      if (drag.from === 'rack') {
+        if (k !== null) place(drag.tile, k);
+      } else if (k === null) {
+        setSlots((cur) => cur.map((x, j) => (j === drag.slot ? null : x)));
+        setCursor(drag.slot);
+      } else if (k !== drag.slot) {
+        sfx.tap();
+        setSlots((cur) => cur.map((x, j) => (j === k ? drag.tile : j === drag.slot ? cur[k] : x)));
+        setCursor(null);
+      }
+    };
+    const cancel = () => setDrag(null);
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', cancel);
+    return () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cancel);
+    };
+  });
 
   const fillWord = (w: string) => {
     const used: number[] = [];
@@ -334,7 +427,8 @@ function SetPanel({ game, onMove, onError }: { game: Game; onMove: (g: Game) => 
       if (i < 0) return;
       used.push(i);
     }
-    setPicked(used);
+    setSlots(EMPTY_SLOTS.map((_, k) => used[k] ?? null));
+    setCursor(null);
   };
 
   async function send() {
@@ -373,11 +467,11 @@ function SetPanel({ game, onMove, onError }: { game: Game; onMove: (g: Game) => 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      if (e.key === 'Backspace') setPicked((p) => p.slice(0, -1));
+      if (e.key === 'Backspace') removeLast();
       else if (e.key === 'Enter') void send();
       else if (/^[a-z]$/i.test(e.key)) {
         const ch = e.key.toLowerCase();
-        const i = order.find((j) => rack.letters[j] === ch && !picked.includes(j));
+        const i = order.find((j) => rack.letters[j] === ch && !used(j));
         if (i !== undefined) pick(i);
       }
     };
@@ -387,7 +481,8 @@ function SetPanel({ game, onMove, onError }: { game: Game; onMove: (g: Game) => 
 
   let status: React.ReactNode;
   if (bad) status = <span className="bad">{bad}</span>;
-  else if (word.length < 4) status = 'Tap tiles to spell a word (4 to 8 letters)';
+  else if (gap) status = 'Fill the blank, or tap a letter to take it out';
+  else if (word.length < 4) status = 'Tap or drag tiles to spell a word (4 to 8 letters)';
   else if (!isWord(word)) status = <span className="bad">Not in our word list</span>;
   else status = <span className="good">✓ {word.toUpperCase()} is worth {wordValue(word)} points</span>;
 
@@ -398,12 +493,17 @@ function SetPanel({ game, onMove, onError }: { game: Game; onMove: (g: Game) => 
         <p className="prompt">Make a word to stump {game.them.username}</p>
       </div>
       <div className="slots">
-        {Array.from({ length: 8 }, (_, k) => {
-          const i = picked[k];
-          return i === undefined ? (
-            <div key={k} className="slot" />
+        {slots.map((i, k) => {
+          const cls = `${drag?.over === k ? ' over' : ''}${cursor === k ? ' cursor' : ''}`;
+          return i === null ? (
+            <div key={k} data-slot={k} className={`slot${cls}`} onPointerDown={() => tapSlot(k)} />
           ) : (
-            <button key={k} className="tile in-slot" onClick={() => setPicked(picked.filter((x) => x !== i))}>
+            <button
+              key={k}
+              data-slot={k}
+              className={`tile in-slot${cls}${drag?.moved && drag.from === 'slot' && drag.slot === k ? ' lifted' : ''}`}
+              onPointerDown={(e) => startDrag(e, 'slot', i, k)}
+            >
               {rack.letters[i]}
               <span className="tv">{LETTER_VALUES[rack.letters[i]]}</span>
             </button>
@@ -413,15 +513,26 @@ function SetPanel({ game, onMove, onError }: { game: Game; onMove: (g: Game) => 
       <div className="set-status">{status}</div>
       <div className="rack">
         {order.map((i) => (
-          <button key={i} className={`tile ${picked.includes(i) ? 'used' : ''}`} onClick={() => pick(i)} disabled={picked.includes(i)}>
+          <button
+            key={i}
+            className={`tile ${used(i) ? 'used' : ''}${drag?.moved && drag.from === 'rack' && drag.tile === i ? ' lifted' : ''}`}
+            onPointerDown={(e) => !used(i) && startDrag(e, 'rack', i)}
+            disabled={used(i)}
+          >
             {rack.letters[i]}
             <span className="tv">{LETTER_VALUES[rack.letters[i]]}</span>
           </button>
         ))}
       </div>
+      {drag?.moved && (
+        <div className="tile drag-ghost" style={{ left: drag.x, top: drag.y }}>
+          {rack.letters[drag.tile]}
+          <span className="tv">{LETTER_VALUES[rack.letters[drag.tile]]}</span>
+        </div>
+      )}
       <div className="tool-row">
         <button className="btn btn-ghost" onClick={() => setOrder([...order].sort(() => Math.random() - 0.5))}>Shuffle</button>
-        <button className="btn btn-ghost" onClick={() => setPicked([])} disabled={!picked.length}>Clear</button>
+        <button className="btn btn-ghost" onClick={clear} disabled={last < 0}>Clear</button>
         <button className="btn btn-ghost" onClick={swap} disabled={busy || rack.swaps_left < 1}>
           New tiles{rack.swaps_left < 1 ? ' (used)' : ''}
         </button>
@@ -492,6 +603,10 @@ function DonePanel({ game, me }: { game: Game; me: Me }) {
     if (won) sfx.win();
     else if (!tie) sfx.lose();
   }, [won, tie]);
+  const [record, setRecord] = useState('');
+  useEffect(() => {
+    api.headToHead(game.them.id).then((r) => setRecord(recordLine(game.them.username, r))).catch(() => {});
+  }, [game.them.id, game.them.username]);
   const title = game.resigned_by
     ? game.resigned_by === me.id ? 'You resigned' : `${game.them.username} resigned`
     : tie ? 'It’s a tie!' : won ? 'You win!' : `${game.them.username} wins!`;
@@ -504,6 +619,7 @@ function DonePanel({ game, me }: { game: Game; me: Me }) {
         </div>
         <div className="result-title">{title}</div>
         <div className="final-score">{game.me.score} – {game.them.score}</div>
+        {record && <div className="record-line big">{record} overall</div>}
       </div>
       <button
         className="btn btn-big btn-go"

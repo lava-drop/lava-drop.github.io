@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Color, Friend, Game, GameSummary } from './types';
+import type { Color, Friend, Game, GameSummary, Leader, Record3, Stats } from './types';
 
 async function call<T>(fn: string, args?: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.rpc(fn, args);
@@ -26,6 +26,9 @@ export const api = {
   resign: (gid: string) => call<Game>('resign', { gid }),
   inviteInfo: (inviter: string) => call<Friend | null>('invite_info', { inviter }),
   acceptInvite: (inviter: string) => call<(Friend & { self: boolean }) | null>('accept_invite', { inviter }),
+  headToHead: (other: string) => call<Record3>('head_to_head', { other }),
+  leaderboard: () => call<Leader[]>('leaderboard'),
+  myStats: () => call<Stats>('my_stats'),
   changeUsername: (newName: string) => call<'ok' | 'invalid' | 'taken'>('change_username', { new_name: newName }),
 };
 

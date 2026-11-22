@@ -6,6 +6,7 @@ import { emailFor } from '../config';
 import { disablePush, enablePush, pushState, type PushState } from '../push';
 import { isMuted, setMuted } from '../sound';
 import { supabase } from '../supabase';
+import type { Stats } from '../types';
 import { BackBar } from './BackBar';
 
 const NAME_RULE = /^[A-Za-z0-9_]{3,16}$/;
@@ -25,9 +26,11 @@ export function MeScreen({ me, onChange }: { me: Me; onChange: () => void }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ good: boolean; text: string } | null>(null);
   const [push, setPush] = useState<PushState | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
     void pushState().then(setPush);
+    api.myStats().then(setStats).catch(() => {});
   }, []);
 
   async function pick(c: (typeof COLOR_KEYS)[number]) {
@@ -127,6 +130,7 @@ export function MeScreen({ me, onChange }: { me: Me; onChange: () => void }) {
           ))}
         </div>
       </div>
+      {stats && <StatsCard s={stats} />}
       <div className="card list">
         <button className="list-row" onClick={togglePush} disabled={push !== 'on' && push !== 'off'}>
           Turn notifications <span className="list-right">{push ? PUSH_LABEL[push] : '…'}</span>
@@ -151,6 +155,41 @@ export function MeScreen({ me, onChange }: { me: Me; onChange: () => void }) {
           {me.guest ? 'Sign out (loses this guest)' : 'Sign out'}
         </button>
       </div>
+    </div>
+  );
+}
+
+function StatsCard({ s }: { s: Stats }) {
+  const tiles: [string, string][] = [
+    ['Wins', String(s.wins)],
+    ['Losses', String(s.losses)],
+    ['Win streak', String(s.streak)],
+    ['Best score', s.best_score == null ? '–' : String(s.best_score)],
+  ];
+  return (
+    <div className="card stats">
+      <div className="label">Your record</div>
+      <div className="stat-tiles">
+        {tiles.map(([k, v]) => (
+          <div key={k} className="stat-tile">
+            <b>{v}</b>
+            <span>{k}</span>
+          </div>
+        ))}
+      </div>
+      {s.best_word ? (
+        <p className="stat-line">
+          Best word: <span className="stat-word">{s.best_word.word.toUpperCase()}</span>, dropped {s.best_word.victim} in the lava
+          for {s.best_word.points} points.
+        </p>
+      ) : (
+        <p className="stat-line dim">Stump someone with a word and your best one shows up here.</p>
+      )}
+      <p className="stat-line dim">
+        Stumped people {s.stumps} {s.stumps === 1 ? 'time' : 'times'}
+        {s.bot_wins + s.bot_losses > 0 && <> · vs the computer {s.bot_wins}–{s.bot_losses}</>}
+        {s.ties > 0 && <> · {s.ties} {s.ties === 1 ? 'tie' : 'ties'}</>}
+      </p>
     </div>
   );
 }
