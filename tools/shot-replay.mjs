@@ -1,0 +1,42 @@
+// Checks the bot replay: a throwaway account sets a word against Magma and screenshots mid-replay,
+// then after Skip. Clean up with tools/cleanup-test-users.sql.
+import puppeteer from 'puppeteer-core';
+import { createClient } from '@supabase/supabase-js';
+import { readFileSync } from 'node:fs';
+import { SUPABASE_URL, SUPABASE_KEY, emailFor } from '../src/config.ts';
+const words = readFileSync(new URL('../public/words.txt', import.meta.url), 'utf8').split('\n').filter(Boolean);
+const fits = (w, rack) => { let r = rack; for (const ch of w) { const i = r.indexOf(ch); if (i < 0) return false; r = r.slice(0, i) + r.slice(i + 1); } return true; };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const name = `test_r${Math.random().toString(36).slice(2, 6)}`;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
+await sb.auth.signUp({ email: emailFor(name), password: 'testpass1', options: { data: { username: name, color: 'coral' } } });
+const bots = (await sb.rpc('list_bots')).data;
+const gid = (await sb.rpc('start_game', { opponent: bots.find((b) => b.bot === 'hard').id })).data;
+const g = (await sb.rpc('get_game', { gid })).data;
+const w = words.filter((x) => x.length >= 6 && fits(x, g.rack.letters)).sort((a, b) => b.length - a.length)[0];
+
+const b = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true, args: ['--mute-audio'] });
+const p = await b.newPage();
+await p.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
+p.on('pageerror', (e) => console.log('PAGEERROR', e.message));
+await p.goto('http://127.0.0.1:5173/lava-drop/', { waitUntil: 'networkidle0' });
+await p.type('input[autocomplete=username]', name);
+await p.type('input[type=password]', 'testpass1');
+await p.evaluate(() => document.querySelector('form').requestSubmit());
+await sleep(2000);
+await p.goto(`http://127.0.0.1:5173/lava-drop/#/game/${gid}`, { waitUntil: 'networkidle0' });
+await sleep(1500);
+for (const ch of w) await p.keyboard.press(ch);
+await sleep(500);
+await p.screenshot({ path: 'preview/29-set.png', fullPage: true });
+await p.keyboard.press('Enter');
+await sleep(3500);
+await p.screenshot({ path: 'preview/22-replay-mid.png' });
+await p.evaluate(() => [...document.querySelectorAll('button')].find((x) => x.textContent.startsWith('Skip')).click());
+await sleep(2500);
+await p.screenshot({ path: 'preview/23-replay-end.png' });
+await p.evaluate(() => [...document.querySelectorAll('button')].find((x) => x.textContent === 'OK').click());
+await sleep(2000);
+await p.screenshot({ path: 'preview/25-after.png', fullPage: true });
+console.log('word', w);
+await b.close();
