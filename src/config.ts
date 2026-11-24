@@ -8,3 +8,6 @@ export const emailFor = (username: string) => `${username.trim().toLowerCase()}@
 
 // Web push: the public half of the VAPID key pair (the private half is a Supabase function secret).
 export const VAPID_PUBLIC = 'BMXEk-EELtjR9Jml8wh_yBvs2ZPSKUevgTcXBhz4KBfUFlP5HoqflWfewVH9Z2CUHuF_1LMeLAuDSkgyC_yWnhw';
+
+// Points taken off for New tiles. Must match public.swap_cost() in the database.
+export const SWAP_COST = 5;

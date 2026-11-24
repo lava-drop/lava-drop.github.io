@@ -31,7 +31,7 @@ of any existing app.
 - Player 1 sets a word first. On each later turn: solve the open word, then set one. Turn engine:
   `next_action()` / `advance_game()` in the schema migration.
 - Racks: 10 tiles, 3-4 vowels, at most two of any letter, re-dealt until the rack can make at
-  least 8 words of 5+ letters (`deal_rack()`). One "New tiles" per turn.
+  least 8 words of 5+ letters (`deal_rack()`). One "New tiles" per turn, costing `swap_cost()` (5) points (migration 16).
 - Letter values: 1 (e a i o n r t s l), 2 (u d g), 3 (c m h b p), 4 (f w y v k), 6 (j x), 8 (q z).
 - Solve: word value + 2 per balloon left, to the solver. Fail: word value to the setter.
 - A wrong whole-word guess costs a balloon, like a wrong letter.

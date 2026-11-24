@@ -22,8 +22,8 @@ export function HowToPlay() {
         </p>
         <h3>Making a word</h3>
         <p>
-          You get 10 letter tiles. Tap tiles to spell a real word, 4 to 8 letters long. Don’t like your tiles? You
-          can trade them for new ones once per turn. Stuck? Tap <b>Ideas</b>.
+          You get 10 letter tiles. Tap tiles to spell a real word, 4 to 8 letters long. Don’t like your tiles? Tap
+          <b>New tiles</b> to trade them once per turn, but it costs you 5 points.
         </p>
         <h3>Points</h3>
         <p>

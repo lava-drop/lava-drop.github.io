@@ -35,15 +35,3 @@ export const LETTER_VALUES: Record<string, number> = {
 };
 
 export const wordValue = (w: string) => [...w].reduce((s, ch) => s + (LETTER_VALUES[ch] ?? 0), 0);
-
-// A few words the rack can make, for players who get stuck.
-export async function ideas(rack: string, count = 3): Promise<string[]> {
-  const list = await loadWords();
-  const fits = list.filter((w) => w.length >= 4 && fitsRack(w, rack));
-  const picks: string[] = [];
-  const pool = [...fits];
-  while (picks.length < count && pool.length) {
-    picks.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
-  }
-  return picks;
-}

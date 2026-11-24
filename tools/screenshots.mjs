@@ -103,7 +103,6 @@ const g0 = await A.rpc('get_game', { gid });
 const w0 = words.filter((x) => x.length >= 5 && fits(x, g0.rack.letters)).sort((a, b) => b.length - a.length)[0] ?? words.find((x) => fits(x, g0.rack.letters));
 for (const ch of w0) await page.keyboard.press(ch);
 await sleep(300);
-await clickText('Ideas');
 await shot('05-set-word');
 await page.keyboard.press('Enter');
 await sleep(2000);

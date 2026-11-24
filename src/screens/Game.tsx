@@ -6,7 +6,8 @@ import { Critter } from '../art/Critter';
 import { Scene } from '../art/Scene';
 import { sfx } from '../sound';
 import type { Game, WordResult } from '../types';
-import { fitsRack, ideas, isWord, LETTER_VALUES, loadWords, wordValue } from '../words';
+import { isWord, LETTER_VALUES, loadWords, wordValue } from '../words';
+import { SWAP_COST } from '../config';
 import { BackBar } from './BackBar';
 import { useGamesFeed } from './Home';
 
@@ -335,7 +336,7 @@ function SetPanel({ game, onMove, onError }: { game: Game; onMove: (g: Game) => 
   const [cursor, setCursor] = useState<number | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [busy, setBusy] = useState(false);
-  const [suggest, setSuggest] = useState<string[] | null>(null);
+  const [armed, setArmed] = useState(false);
   const [, setWordsReady] = useState(0);
   const [bad, setBad] = useState('');
 
@@ -343,8 +344,13 @@ function SetPanel({ game, onMove, onError }: { game: Game; onMove: (g: Game) => 
     setOrder([...rack.letters].map((_, i) => i));
     setSlots(EMPTY_SLOTS);
     setCursor(null);
-    setSuggest(null);
+    setArmed(false);
   }, [rack.letters]);
+  useEffect(() => {
+    if (!armed) return;
+    const t = setTimeout(() => setArmed(false), 3000);
+    return () => clearTimeout(t);
+  }, [armed]);
   useEffect(() => {
     void loadWords().then(() => setWordsReady(1));
   }, []);
@@ -433,17 +439,6 @@ function SetPanel({ game, onMove, onError }: { game: Game; onMove: (g: Game) => 
     };
   });
 
-  const fillWord = (w: string) => {
-    const used: number[] = [];
-    for (const ch of w) {
-      const i = [...rack.letters].findIndex((c, j) => c === ch && !used.includes(j));
-      if (i < 0) return;
-      used.push(i);
-    }
-    setSlots(EMPTY_SLOTS.map((_, k) => used[k] ?? null));
-    setCursor(null);
-  };
-
   async function send() {
     if (!valid || busy) return;
     setBusy(true);
@@ -464,7 +459,10 @@ function SetPanel({ game, onMove, onError }: { game: Game; onMove: (g: Game) => 
     }
   }
 
+  // New tiles costs points, so the first tap only asks; a second tap within 3 seconds trades.
   async function swap() {
+    if (!armed) return setArmed(true);
+    setArmed(false);
     setBusy(true);
     try {
       const g = await api.swapRack(game.id);
@@ -547,23 +545,9 @@ function SetPanel({ game, onMove, onError }: { game: Game; onMove: (g: Game) => 
         <button className="btn btn-ghost" onClick={() => setOrder([...order].sort(() => Math.random() - 0.5))}>Shuffle</button>
         <button className="btn btn-ghost" onClick={clear} disabled={last < 0}>Clear</button>
         <button className="btn btn-ghost" onClick={swap} disabled={busy || rack.swaps_left < 1}>
-          New tiles{rack.swaps_left < 1 ? ' (used)' : ''}
+          {rack.swaps_left < 1 ? 'New tiles (used)' : armed ? `Tap again: −${SWAP_COST} pts` : `New tiles −${SWAP_COST}`}
         </button>
-        <button className="btn btn-ghost" onClick={async () => setSuggest(await ideas(rack.letters))}>Ideas</button>
       </div>
-      {suggest && (
-        <div className="ideas">
-          {suggest.length === 0 ? (
-            <span className="fine">No ideas with these tiles. Try New tiles.</span>
-          ) : (
-            suggest.map((w) => (
-              <button key={w} className="chip" onClick={() => fitsRack(w, rack.letters) && fillWord(w)}>
-                {w.toUpperCase()} · {wordValue(w)}
-              </button>
-            ))
-          )}
-        </div>
-      )}
       <button className="btn btn-big btn-go" disabled={!valid || busy} onClick={send}>
         Send to {game.them.username}
       </button>

@@ -280,7 +280,6 @@ b { color: var(--gold); }
 .rack { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; justify-items: center; background: linear-gradient(180deg, #1E100D, #140907); border: 3px solid var(--ink); border-radius: 18px; padding: 12px 8px 14px; box-shadow: var(--pop), inset 0 3px 0 rgba(255, 255, 255, 0.3); }
 .tool-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 14px; }
 .tool-row .btn { padding: 8px 2px; font-size: 0.95rem; }
-.ideas { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 10px; }
 .chip { border: 3px solid var(--ink); background: var(--cream-2); color: var(--gold); border-radius: 999px; padding: 5px 14px; font-weight: 800; box-shadow: 0 3px 0 var(--ink); }
 
 .wait-card p { font-size: 1.1rem; font-weight: 600; }
