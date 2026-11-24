@@ -21,6 +21,7 @@ export const api = {
   guessLetter: (gid: string, letter: string) => call<Game>('guess_letter', { gid, letter }),
   guessWord: (gid: string, guess: string) => call<Game>('guess_word', { gid, guess }),
   swapRack: (gid: string) => call<Game>('swap_rack', { gid }),
+  logMissedWord: (w: string) => call<void>('log_missed_word', { w }),
   submitWord: (gid: string, word: string) =>
     call<{ result: 'ok' | 'not_a_word' | 'not_in_rack' | 'bad_length'; game?: Game }>('submit_word', { gid, word }),
   resign: (gid: string) => call<Game>('resign', { gid }),

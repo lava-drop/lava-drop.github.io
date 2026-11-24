@@ -20,11 +20,15 @@ of any existing app.
 - **Accounts:** Supabase needs an email, so each username maps to
   `<username>@players.popquiz.invalid` (`src/config.ts`). Email confirmation is off. There is
   no password reset by email; reset one with the Supabase dashboard (Authentication > Users).
-- **Words:** `tools/build-words.mjs` builds the list players may set (21,489 words, 4-8
-  letters): ENABLE (public domain) intersected with the 50k most frequent words from
-  hermitdave/FrequencyWords (CC BY-SA 4.0, credited on How to play), minus
-  `tools/data/blocklist.txt`. It writes `public/words.txt` (instant check in the app) and the
-  dictionary migration (the server's check). Guessing letters needs no dictionary.
+- **Words:** `tools/build-words.mjs` builds the list players may set (41,644 words, 4-8
+  letters): the American spell-check list (ESDB/SCOWL size 60, US, `tools/data/scowl-us60.txt`,
+  license in `tools/data/scowl-README.txt`) plus "common" words (ENABLE ∩ the 50k most frequent
+  in hermitdave/FrequencyWords, CC BY-SA 4.0; only these are set by the bot), minus
+  `tools/data/blocklist.txt` and its word endings (with an allow list for SPICY, HONKED ...).
+  Both sources are credited on How to play. It writes `public/words.txt` (instant check in the
+  app) and migration 17, which syncs the dictionary table. Guessing letters needs no dictionary.
+- **Missed words:** words left marked "Not in our word list" for 3 s are logged to
+  `missed_words` (migration 18): `select word, count(*) from missed_words group by 1 order by 2 desc`.
 
 ## Rules as coded
 

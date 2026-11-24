@@ -39,7 +39,7 @@ export function HowToPlay() {
         <h3>No one to play?</h3>
         <p>No one around? Play <b>Magma</b>, the computer, from the New game screen.</p>
       </div>
-      <p className="fine center">Word list: ENABLE (public domain) filtered by the OpenSubtitles frequency list (hermitdave/FrequencyWords, CC BY-SA 4.0).</p>
+      <p className="fine center">Word list: the American English spell-check list (ESDB/SCOWL, © Kevin Atkinson, wordlist.aspell.net), plus common words from ENABLE (public domain) and the OpenSubtitles frequency list (hermitdave/FrequencyWords, CC BY-SA 4.0).</p>
     </div>
   );
 }

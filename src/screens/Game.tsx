@@ -337,7 +337,7 @@ function SetPanel({ game, onMove, onError }: { game: Game; onMove: (g: Game) => 
   const [drag, setDrag] = useState<Drag | null>(null);
   const [busy, setBusy] = useState(false);
   const [armed, setArmed] = useState(false);
-  const [, setWordsReady] = useState(0);
+  const [wordsReady, setWordsReady] = useState(0);
   const [bad, setBad] = useState('');
 
   useEffect(() => {
@@ -359,6 +359,14 @@ function SetPanel({ game, onMove, onError }: { game: Game; onMove: (g: Game) => 
   const gap = slots.slice(0, last + 1).includes(null);
   const word = gap ? '' : slots.slice(0, last + 1).map((i) => rack.letters[i!]).join('');
   const valid = word.length >= 4 && word.length <= 8 && isWord(word);
+  // A word that sits marked "Not in our word list" for 3 seconds gets logged, so missing words
+  // reach us (table missed_words) without anyone having to complain.
+  const missing = word.length >= 4 && wordsReady > 0 && !isWord(word) ? word : '';
+  useEffect(() => {
+    if (!missing) return;
+    const t = setTimeout(() => void api.logMissedWord(missing).catch(() => {}), 3000);
+    return () => clearTimeout(t);
+  }, [missing]);
   const used = (i: number) => slots.includes(i);
 
   /** Puts rack tile i in slot k. Whatever was in k goes back to the rack; if i was in another slot, that one empties. */

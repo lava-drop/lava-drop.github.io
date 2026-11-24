@@ -1,67 +1,65 @@
-// Builds the list of words a player may set for their opponent.
-// A word qualifies when it is in ENABLE (public domain), is 4-8 plain letters long, is not in
-// tools/data/blocklist.txt, and either:
-//   - is among the 50,000 most frequent English words in the OpenSubtitles frequency list
-//     (hermitdave/FrequencyWords, CC BY-SA 4.0), or
-//   - is a plural or verb form (-s, -ed, -ing) of one of the 25,000 most common of them.
-//     Subtitles rarely say "slurped" even though "slurp" is common, so the frequency list
-//     alone threw out ordinary words (2026-11-23).
-// Outputs public/words.txt (the app's instant check) and the dictionary migrations (2 = common
-// words, 15 = their forms, which the bot never sets).
+// Builds the list of words a player may set for their opponent (4-8 plain letters, none on
+// tools/data/blocklist.txt, nor a plural/verb/-er form of one).
+//
+// A word qualifies when it is either:
+//   - in the American English spell-check list, ESDB/SCOWL size 60, US spelling
+//     (tools/data/scowl-us60.txt, lowercase 4-8 letter words only, so no names or abbreviations;
+//     license and credit in tools/data/scowl-README.txt). This is what a US spell checker accepts,
+//     so everyday words like ZESTY, FRUMPY and newer ones like EMOJI are in (2026-11-24), or
+//   - "common": in ENABLE and among the 50,000 most frequent words in the OpenSubtitles frequency
+//     list (hermitdave/FrequencyWords, CC BY-SA 4.0). Only common words are set by the bot.
+//
+// History: until 2026-11-24 the list was the common words plus their -s/-ed/-ing forms only,
+// which turned away too many normal words and let in junk like ABOVES. Those forms now count
+// only when the spell-check list has them.
+//
+// Outputs public/words.txt (the app's instant check) and migration 17, which syncs the live
+// dictionary table to exactly this list. Re-run after changing a source, then push the migration
+// (rename it to a new timestamp if 17 is already applied).
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const lines = (f) => readFileSync(new URL(`./data/${f}`, import.meta.url), 'utf8').split(/\r?\n/);
 const ok = (w) => /^[a-z]{4,8}$/.test(w);
 const enable = new Set(lines('enable1.txt').map((w) => w.trim()).filter(Boolean));
 const block = new Set(lines('blocklist.txt').join(' ').split(/\s+/).filter(Boolean));
-const common = [...new Set(lines('en_50k.txt').map((l) => l.split(' ')[0]).filter((w) => enable.has(w)))]; // most frequent first
 
-// Verb and plural endings of a common word; ENABLE decides which ones are real. Bases come from
-// the 25,000 most common words only, so rare words don't breed rarer ones.
-function forms(b) {
-  const out = [b + 's', b + 'es', b + 'ed', b + 'd', b + 'ing'];
-  if (b.endsWith('e')) out.push(b.slice(0, -1) + 'ing');
-  if (/[^aeiou]y$/.test(b)) out.push(b.slice(0, -1) + 'ies', b.slice(0, -1) + 'ied');
-  if (/[^aeiou][aeiou][bdgklmnprt]$/.test(b)) out.push(b + b.at(-1) + 'ed', b + b.at(-1) + 'ing');
-  return out;
+// A blocked word's endings stay blocked (the spell-check list has plurals and verb forms).
+const ENDINGS = ['s', 'es', 'ed', 'd', 'ing', 'er', 'ers', 'y', 'ier', 'iest', 'ies'];
+// Innocent words the ending rule would otherwise catch (SPICY from spic, HONKED from honky ...).
+const ALLOW = new Set(`assess assessed assesses chinked chinking cocked cocker cockers cockier cockiest
+  cocking cocky dicker dickers honked honker honkers honking honks horned horns rapier raps spiced
+  spices spicier spiciest spicing spicy spunk spunkier spunks spunky titter titters`.split(/\s+/));
+function blocked(w) {
+  if (ALLOW.has(w)) return false;
+  if (block.has(w)) return true;
+  for (const e of ENDINGS) {
+    if (!w.endsWith(e) || w.length - e.length < 3) continue;
+    const stem = w.slice(0, -e.length);
+    if (block.has(stem) || block.has(stem + 'e') || block.has(stem + 'y')) return true;
+    if (stem.length > 3 && stem.at(-1) === stem.at(-2) && block.has(stem.slice(0, -1))) return true;
+  }
+  return false;
 }
+const keep = (w) => ok(w) && !blocked(w);
 
-const keep = (w) => ok(w) && !block.has(w);
-const base = common.filter(keep).sort();
-const inBase = new Set(base);
-const extra = new Set();
-for (const b of common.slice(0, 25000)) {
-  if (/(ed|ing|s)$/.test(b) || block.has(b)) continue; // a blocked word's forms stay blocked
-  for (const f of forms(b)) if (enable.has(f) && keep(f) && !inBase.has(f)) extra.add(f);
-}
-const forms_ = [...extra].sort();
-const words = [...base, ...forms_].sort();
+const common = new Set(
+  lines('en_50k.txt').map((l) => l.split(' ')[0]).filter((w) => enable.has(w) && keep(w)),
+);
+const speller = new Set(lines('scowl-us60.txt').map((w) => w.trim()).filter(keep));
+const words = [...new Set([...common, ...speller])].sort();
 
 writeFileSync(new URL('../public/words.txt', import.meta.url), words.join('\n') + '\n');
-writeFileSync(new URL('../supabase/migrations/20261122000002_dictionary.sql', import.meta.url),
-  `-- Generated by tools/build-words.mjs. ${base.length} words.
-insert into public.dictionary (word)
-select unnest(string_to_array('${base.join(' ')}', ' '))
-on conflict do nothing;
+const list = (ws) => `string_to_array('${ws.join(' ')}', ' ')`;
+writeFileSync(new URL('../supabase/migrations/20261124000017_spellcheck_words.sql', import.meta.url),
+  `-- Generated by tools/build-words.mjs. Syncs the dictionary to ${words.length} words:
+-- ${common.size} common (the bot may set them) + the American spell-check list (ESDB size 60).
+-- Words set in past games are stored on the game, so removing a word here changes no game.
+create temp table new_words (word text primary key, common boolean not null);
+insert into new_words select w, true from unnest(${list([...common].sort())}) w;
+insert into new_words select w, false from unnest(${list([...speller].filter((w) => !common.has(w)).sort())}) w;
+delete from public.dictionary d where not exists (select 1 from new_words n where n.word = d.word);
+insert into public.dictionary (word, common) select word, common from new_words
+on conflict (word) do update set common = excluded.common;
+drop table new_words;
 `);
-const insert = (list) => `insert into public.dictionary (word, common)
-select w, false from unnest(string_to_array('${list.join(' ')}', ' ')) w
-on conflict do nothing;
-`;
-writeFileSync(new URL('../supabase/migrations/20261123000015_word_forms.sql', import.meta.url),
-  `-- Generated by tools/build-words.mjs. ${forms_.length} plural/verb forms of common words
--- (SLURPED, BURPED ...), which the subtitle frequency list left out. Players may set them, but the
--- bot only sets common words so it doesn't throw oddities like JUNGLED at people.
-alter table public.dictionary add column if not exists common boolean not null default true;
-do $$
-declare src text;
-begin
-  select pg_get_functiondef('public.bot_set(uuid, uuid, text)'::regprocedure) into src;
-  if src not like '%where common and length(word)%' then
-    src := replace(src, 'where length(word)', 'where common and length(word)');
-    if src not like '%where common and length(word)%' then raise exception 'bot_set patch did not apply'; end if;
-    execute src;
-  end if;
-end $$;
-` + insert(forms_));
-console.log(`${base.length} common words + ${forms_.length} forms = ${words.length}`);
+console.log(`${common.size} common + ${words.length - common.size} spell-check only = ${words.length}`);
